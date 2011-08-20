@@ -150,7 +150,6 @@ class Zend_Oauth_Provider
 	    if(empty($this->requestPath)) {
 	        return true;
 	    }
-	    $GLOBALS['log']->debug("URLs: now: ".$this->url->getUri(). " req: {$this->requestPath}");
 	    if($this->requestPath[0] == '/') {
 	        return $this->url->getPath() != $this->requestPath;
 	    }
