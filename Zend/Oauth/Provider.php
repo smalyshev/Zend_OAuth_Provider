@@ -9,6 +9,9 @@ require_once 'Zend/Uri/Http.php';
  */
 class Zend_Oauth_Provider
 {
+    /**
+     * OAuth result statuses
+     */
     const OK = 0;
     const BAD_NONCE = 1;
     const BAD_TIMESTAMP = 2;
@@ -23,6 +26,10 @@ class Zend_Oauth_Provider
     const SIGNATURE_METHOD_REJECTED = 11;
     const OAUTH_VERIFIER_INVALID = 12;
 
+    /**
+     * Error names for error reporting
+     * @var array
+     */
     protected $errnames = array(
      self::BAD_NONCE => "nonce_used",
      self::BAD_TIMESTAMP => "timestamp_refused",
@@ -140,6 +147,7 @@ class Zend_Oauth_Provider
 
 	/**
 	 * Check if this request needs token
+	 * Requests made to requestPath do not need a token
 	 * @return bool
 	 */
 	protected function needsToken()
@@ -202,8 +210,10 @@ class Zend_Oauth_Provider
 
 	/**
 	 * Collect request parameters from the environment
+	 * FIXME: uses GET/POST/SERVER, needs to be made injectable instead
 	 * @param string $method HTTP method being used
 	 * @param string $params Extra parameters
+	 * @return array List of all oauth params in the request
 	 */
 	protected function assembleParams($method, $params = array())
 	{
@@ -239,7 +249,8 @@ class Zend_Oauth_Provider
 	}
 
 	/**
-	 * Get current request URL
+	 * Get full current request URL
+	 * @return string 
 	 */
 	protected function getRequestUrl()
 	{
@@ -270,6 +281,7 @@ class Zend_Oauth_Provider
 	    // We'll ignore query for the pruposes of URL matching
 	    $this->url->setQuery('');
 
+		// FIXME: make it injectable
 	    if(isset($_SERVER['REQUEST_METHOD'])) {
 	        $method = $_SERVER['REQUEST_METHOD'];
 	    } elseif(isset($_SERVER['HTTP_METHOD'])) {
