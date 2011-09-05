@@ -236,7 +236,7 @@ class Zend_Oauth_Provider
 
 	    if(!empty($auth) && substr($auth, 0, 6) == 'OAuth ') {
 	        // import header data
-	        if (preg_match_all('/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+	        if (preg_match_all('/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $auth, $matches)) {
               foreach ($matches[1] as $num => $header) {
                   if($header == 'realm') {
                       continue;
@@ -290,8 +290,8 @@ class Zend_Oauth_Provider
 	        $method = 'GET';
 	    }
         $params = $this->assembleParams($method, $params);
-        $this->checkSignatureMethod($params['oauth_signature_method']);
         $this->checkRequiredParams($params);
+        $this->checkSignatureMethod($params['oauth_signature_method']);
 
         $this->timestamp = $params['oauth_timestamp'];
         $this->nonce = $params['oauth_nonce'];
