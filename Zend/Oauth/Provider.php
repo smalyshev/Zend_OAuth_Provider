@@ -50,6 +50,7 @@ class Zend_Oauth_Provider
     public $consumer_key;
     public $consumer_secret;
     public $verifier;
+    public $callback;
 
     protected $problem;
 
@@ -306,6 +307,10 @@ class Zend_Oauth_Provider
         $this->timestamp = $params['oauth_timestamp'];
         $this->nonce = $params['oauth_nonce'];
         $this->consumer_key = $params['oauth_consumer_key'];
+        
+        if (isset($params['oauth_callback'])) {
+            $this->callback = $params['oauth_callback'];
+        }
 
         if(!is_callable($this->nonceHandler)) {
             throw new Zend_Oauth_Exception("Nonce handler not callable", self::BAD_NONCE);
