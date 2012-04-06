@@ -56,6 +56,7 @@ class Zend_Oauth_Provider
     protected $tokenHandler;
     protected $consumerHandler;
     protected $nonceHandler;
+    protected $oauth_params;
 
     protected $requestPath;
     /**
@@ -265,6 +266,15 @@ class Zend_Oauth_Provider
 	}
 
 	/**
+     * Returns oauth parameters
+     * @return array
+     */
+    public function getOAuthParams()
+    {
+        return $this->oauth_params;
+    }
+
+    /**
 	 * Validate OAuth request
 	 * @param Zend_Uri_Http $url Request URL, will use current if null
 	 * @param array $params Additional parameters
@@ -280,7 +290,6 @@ class Zend_Oauth_Provider
 	    }
 	    // We'll ignore query for the pruposes of URL matching
 	    $this->url->setQuery('');
-
 		// FIXME: make it injectable
 	    if(isset($_SERVER['REQUEST_METHOD'])) {
 	        $method = $_SERVER['REQUEST_METHOD'];
@@ -290,6 +299,7 @@ class Zend_Oauth_Provider
 	        $method = 'GET';
 	    }
         $params = $this->assembleParams($method, $params);
+        $this->oauth_params = $params;
         $this->checkSignatureMethod($params['oauth_signature_method']);
         $this->checkRequiredParams($params);
 
@@ -318,7 +328,9 @@ class Zend_Oauth_Provider
 
         if($this->needsToken()) {
             $this->token = $params['oauth_token'];
-            $this->verifier = $params['oauth_verifier'];
+            if(isset($params['oauth_verifier'])) {
+                $this->verifier = $params['oauth_verifier'];
+            }
             if(!is_callable($this->tokenHandler)) {
                 throw new Zend_Oauth_Exception("Token handler not callable", self::TOKEN_REJECTED);
             }
