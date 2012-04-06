@@ -290,8 +290,8 @@ class Zend_Oauth_Provider
 	        $method = 'GET';
 	    }
         $params = $this->assembleParams($method, $params);
-        $this->checkSignatureMethod($params['oauth_signature_method']);
         $this->checkRequiredParams($params);
+        $this->checkSignatureMethod($params['oauth_signature_method']);
 
         $this->timestamp = $params['oauth_timestamp'];
         $this->nonce = $params['oauth_nonce'];
