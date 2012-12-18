@@ -212,43 +212,79 @@ class Zend_Oauth_Provider
 
 	/**
 	 * Collect request parameters from the environment
-	 * FIXME: uses GET/POST/SERVER, needs to be made injectable instead
+	 * FIXME: uses GET/POST/SERVER/FILES, needs to be made injectable instead
+         * FIXME 'php://input' can only be read once, we use the frontcontroller for PUT and DELETE for now
+         * @see http://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
 	 * @param string $method HTTP method being used
 	 * @param string $params Extra parameters
 	 * @return array List of all oauth params in the request
 	 */
 	protected function assembleParams($method, $params = array())
 	{
+            // The query component of the HTTP request URI as defined by [RFC3986], Section 3.4.
 	    $params = array_merge($_GET, $params);
-	    if($method == 'POST') {
-	        $params = array_merge($_POST, $params);
-	    }
-	    $auth = null;
-	    if(function_exists('apache_request_headers')) {
-	        $headers = apache_request_headers();
-	        if(isset($headers['Authorization'])) {
-	            $auth = $headers['Authorization'];
-	        } elseif(isset($headers['authorization'])) {
-	            $auth = $headers['authorization'];
-	        }
-	    }
-	    if(empty($auth) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
-	        $auth = $_SERVER['HTTP_AUTHORIZATION'];
-	    }
-
+           
+            // The OAuth HTTP "Authorization" header field (Section 3.5.1) if present.
+	    $auth = $this->findRequestHeader('Authorization', 'HTTP_AUTHORIZATION');
 	    if(!empty($auth) && substr($auth, 0, 6) == 'OAuth ') {
 	        // import header data
 	        if (preg_match_all('/(oauth_[a-z_-]*)=(:?"([^"]*)"|([^,]*))/', $auth, $matches)) {
-              foreach ($matches[1] as $num => $header) {
-                  if($header == 'realm') {
-                      continue;
-                  }
-                  $params[$header] = urldecode(empty($matches[3][$num])? $matches[4][$num] : $matches[3][$num]);
-              }
+                    foreach ($matches[1] as $num => $header) {
+                        if($header == 'realm') {
+                            continue;
+                        }
+                        $params[$header] = urldecode(empty($matches[3][$num])? $matches[4][$num] : $matches[3][$num]);
+                    }
 	        }
 	    }
+            
+            //The HTTP request entity-body, but only if all of the following conditions are met:
+            // - The entity-body is single-part.
+            // - The entity-body follows the encoding requirements of the "application/x-www-form-urlencoded"
+            // - The HTTP request entity-header includes the "Content-Type" header field set to "application/x-www-form-urlencoded".
+            $contentType = $this->findRequestHeader('Content-Type', 'CONTENT_TYPE');
+            if($contentType == 'application/x-www-form-urlencoded' && !$_FILES) {
+                $input = array();
+                if ($method == 'POST') {
+                    $input = $_POST;
+                } elseif ($method == 'PUT' || $method == 'DELETE') {
+                    $frontController = Zend_Controller_Front::getInstance();
+                    $rawBody = $frontController->getRequest()->getRawBody();
+                    parse_str($rawBody, $input);                    
+                }
+                $params = array_merge($input, $params);
+	    }
+            
+            // return array of all parameters that need to be normalized
 	    return $params;
 	}
+        
+        /**
+         * Method to find the right header
+         * @param string $headerName Case insensitive
+         * @param string $serverFallback case sensitive
+         * @return string or false on failure
+         */
+        public function findRequestHeader($headerName, $serverFallback)
+        {
+            // first search in apache request headers:
+            if(function_exists('apache_request_headers')) {
+	        $headers = apache_request_headers();
+                foreach ($headers as $key => $value) {
+                    if (strtolower($key) == strtolower($headerName)) {
+                        return $value;
+                    }
+                }
+            }
+            
+            // use $_SERVER fallback
+            if (isset($_SERVER[$serverFallback])) {
+                return $_SERVER[$serverFallback];
+            }
+            
+            // not found
+            return false;
+        }
 
 	/**
 	 * Get full current request URL
